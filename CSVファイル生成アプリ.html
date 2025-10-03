@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>道の駅 CSV 作成・編集ツール</title>
+    <style>
+        /* CSSリセットとベース設定 */
+        html, body {
+            height: 100%; /* HTMLとBodyがビューポートの高さ全体を占めるようにする */
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box; /* paddingとborderをwidth/heightに含める */
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f7f6;
+            color: #333;
+            display: flex;
+            flex-direction: column; /* body直下の子要素を縦に並べる */
+            /* min-height: 100vh; は height: 100% と box-sizing で不要になることが多い */
+        }
+        h1, h2 {
+            color: #2c3e50;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 5px;
+            margin-top: 20px;
+            margin-bottom: 15px;
+        }
+        .container {
+            max-width: 1400px; /* 全体の最大幅を広げる */
+            margin: 20px auto;
+            background-color: #ffffff;
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+            flex-grow: 1; /* 親 (body) の残りの垂直スペースを占める */
+            display: flex;
+            flex-direction: column; /* コンテナ内の要素も縦に配置 */
+        }
+
+        /* ファイル操作ペイン */
+        .file-controls-pane {
+            margin-bottom: 20px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #eee;
+            flex-shrink: 0; /* 縮小させない */
+        }
+
+        /* データ入力とデータ一覧を左右に配置するためのコンテナ */
+        .content-area {
+            display: flex;
+            flex-wrap: wrap; /* 画面幅が狭い場合に折り返す */
+            gap: 20px; /* ペイン間の隙間 */
+            flex-grow: 1; /* 親 (.container) の残りの垂直スペースを占める */
+            min-height: 0; /* Flexアイテムが内容のサイズを超えて縮むことを許可 */
+            /* overflow: hidden; /* 子要素がはみ出すのを防ぐ（横スクロールは子で処理） */
+        }
+        .input-pane {
+            flex: 4; /* データ入力ペインの幅を4の比率にする */
+            min-width: 400px; /* 最小幅を少し調整 */
+            padding: 20px;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            background-color: #fcfcfc;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.03);
+            display: flex; /* 子要素を縦に配置するためにflexを適用 */
+            flex-direction: column;
+            flex-shrink: 0; /* 横並び時に縮小させない */
+        }
+        .list-pane {
+            flex: 6; /* データ一覧ペインの幅を6の比率にする */
+            min-width: 550px; /* 最小幅を少し調整 */
+            padding: 20px;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            background-color: #fcfcfc;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.03);
+            display: flex; /* 子要素を縦に配置するためにflexを適用 */
+            flex-direction: column;
+            min-height: 0; /* Flexアイテムが内容のサイズを超えて縮むことを許可 */
+        }
+        .list-pane h2 {
+            margin-top: 0;
+            margin-bottom: 15px;
+            flex-shrink: 0; /* タイトルは縮まないようにする */
+        }
+        .table-scroll-wrapper {
+            flex-grow: 1; /* 親要素 (.list-pane) の残りの垂直スペースを全て占める */
+            overflow-y: auto; /* 垂直スクロールを有効にする */
+            overflow-x: auto; /* 横スクロールも有効にする */
+            height: 0; /* Flexアイテムの基準高さを0に設定し、flex-growで高さが決まるようにする */
+            min-height: 0; /* Flexアイテムが内容のサイズを超えて縮むことを許可する */
+            border-top: 1px solid #eee; /* テーブルの上部に罫線を追加して見やすく */
+            padding-top: 5px; /* 罫線とテーブルの間に余白 */
+        }
+        table {
+            width: 100%; /* スクロールラッパー内で幅を100%にする */
+            border-collapse: collapse;
+            font-size: 0.85em;
+        }
+        table th, table td {
+            border: 1px solid #ddd;
+            padding: 6px;
+            text-align: left;
+            word-break: break-all;
+            white-space: nowrap; /* テーブルセルが改行しないように（横スクロールのため） */
+        }
+        table th:last-child,
+        table td:last-child {
+            width: 80px; /* 操作列の幅を固定 */
+            text-align: center;
+            white-space: nowrap; /* ボタンが改行しないように */
+        }
+        table th {
+            background-color: #ecf0f1;
+            font-weight: bold;
+            color: #333;
+            position: sticky; /* ヘッダーを固定する */
+            top: 0; /* スクロール領域の最上部に固定 */
+            z-index: 1; /* 他のコンテンツより手前に表示 */
+        }
+        table tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        .input-group {
+            margin-bottom: 10px;
+        }
+        .input-group label {
+            display: block;
+            margin-bottom: 3px;
+            font-weight: bold;
+            color: #555;
+            font-size: 0.9em;
+        }
+        .input-group input[type="text"],
+        .input-group input[type="date"],
+        .input-group textarea {
+            width: calc(100% - 22px);
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 0.9em;
+            box-sizing: border-box;
+            transition: border-color 0.2s;
+        }
+        .input-group input[type="text"]:focus,
+        .input-group input[type="date"]:focus,
+        .input-group textarea:focus {
+            border-color: #3498db;
+            outline: none;
+        }
+        textarea {
+            resize: vertical;
+            min-height: 50px;
+        }
+        button {
+            background-color: #3498db;
+            color: white;
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9em;
+            margin-right: 8px;
+            transition: background-color 0.2s ease;
+            margin-top: 5px;
+        }
+        button:hover {
+            background-color: #2980b9;
+        }
+        button:active {
+            background-color: #2471a3;
+        }
+        button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+        .file-controls .input-group {
+            display: inline-block;
+            margin-right: 10px;
+            vertical-align: middle;
+        }
+        .filename-input {
+            width: 180px;
+            padding: 6px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 0.9em;
+            box-sizing: border-box;
+        }
+        .file-controls input[type="file"] {
+            margin-right: 10px;
+            padding: 5px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            background-color: #f0f0f0;
+            display: inline-block;
+            vertical-align: middle;
+        }
+        .delete-btn {
+            background-color: #e74c3c;
+            margin-left: 5px;
+            padding: 5px 8px;
+            font-size: 0.8em;
+        }
+        .delete-btn:hover {
+            background-color: #c0392b;
+        }
+        .clear-btn {
+            background-color: #f39c12;
+        }
+        .clear-btn:hover {
+            background-color: #e67e22;
+        }
+        .button-group {
+            margin-top: 15px;
+        }
+        
+        /* レスポンシブ対応 */
+        @media (max-width: 1200px) {
+            .content-area {
+                flex-direction: column;
+                gap: 15px;
+            }
+            .input-pane, .list-pane {
+                min-width: auto;
+                flex: none;
+                width: 100%;
+            }
+        }
+        @media (max-width: 768px) {
+            .container {
+                margin: 10px auto;
+                padding: 15px;
+            }
+            h1, h2 {
+                font-size: 1.5em;
+                margin-top: 15px;
+                margin-bottom: 10px;
+            }
+            .input-group input[type="text"],
+            .input-group input[type="date"],
+            .input-group textarea {
+                width: 100%;
+            }
+            button {
+                width: auto;
+                margin-bottom: 5px;
+                margin-right: 5px;
+                padding: 7px 12px;
+                font-size: 0.85em;
+            }
+            .filename-input {
+                width: calc(100% - 120px);
+                margin-bottom: 10px;
+            }
+            .file-controls .input-group {
+                display: block;
+                margin-right: 0;
+            }
+            .file-controls button, .file-controls input[type="file"] {
+                display: block;
+                width: 100%;
+                margin-bottom: 10px;
+                margin-right: 0;
+            }
+            table th, table td {
+                padding: 4px;
+                font-size: 0.75em;
+            }
+            .delete-btn {
+                padding: 4px 6px;
+                font-size: 0.7em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>道の駅 CSV 作成・編集ツール</h1>
+
+        <section class="file-controls-pane">
+            <h2>ファイル操作</h2>
+            <div class="input-group">
+                <label for="filenameInput">保存/読み込みファイル名:</label>
+                <input type="text" id="filenameInput" class="filename-input" value="道の駅データ.csv">
+            </div>
+            <button id="saveCsvBtn">CSVファイルを保存</button>
+            <input type="file" id="loadCsvInput" accept=".csv">
+            <button id="loadCsvBtn">CSVファイルを読み込み</button>
+            <p style="font-size: 0.8em; color: #666; margin-top: 10px;">
+                <strong>注意:</strong> CSV読み込みは、本ツールで生成された形式（二重引用符、エスケープルール）に厳密に従っている場合に最も安定して動作します。手動で編集されたCSVファイルでは、予期せぬパースエラーが発生する可能性があります。
+            </p>
+        </section>
+
+        <div class="content-area">
+            <section class="input-pane">
+                <h2>データ入力</h2>
+                <div class="input-group">
+                    <label for="visitDate">訪問日 (YYYY-MM-DD):</label>
+                    <input type="date" id="visitDate">
+                </div>
+                <div class="input-group">
+                    <label for="name">名称:</label>
+                    <input type="text" id="name" placeholder="道の駅〇〇">
+                </div>
+                <div class="input-group">
+                    <label for="phoneNumber">電話番号:</label>
+                    <input type="text" id="phoneNumber" placeholder="00-0000-0000">
+                </div>
+                <div class="input-group">
+                    <label for="address">住所:</label>
+                    <input type="text" id="address" placeholder="〇〇県〇〇市〇〇町1-2-3">
+                </div>
+                <div class="input-group">
+                    <label for="latitude">緯度:</label>
+                    <input type="text" id="latitude" placeholder="35.6895">
+                </div>
+                <div class="input-group">
+                    <label for="longitude">経度:</label>
+                    <input type="text" id="longitude" placeholder="139.6917">
+                </div>
+                <div class="input-group">
+                    <label for="url">URL:</label>
+                    <input type="text" id="url" placeholder="https://example.com">
+                </div>
+                <div class="input-group">
+                    <label for="memo">メモ:</label>
+                    <textarea id="memo" placeholder="道の駅に関するメモ（カンマや改行を含む場合は適切に処理されます）"></textarea>
+                </div>
+                <div class="button-group">
+                    <button id="addRowBtn">行を追加</button>
+                    <button id="clearAllRowsBtn" class="clear-btn">全データをクリア</button>
+                </div>
+            </section>
+
+            <section class="list-pane">
+                <h2>データ一覧</h2>
+                <div class="table-scroll-wrapper">
+                    <table id="dataTable">
+                        <thead>
+                            <tr>
+                                <th>訪問日</th>
+                                <th>名称</th>
+                                <th>電話番号</th>
+                                <th>住所</th>
+                                <th>緯度</th>
+                                <th>経度</th>
+                                <th>URL</th>
+                                <th>メモ</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- データがここに追加されます -->
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <script>
+        const headers = ["訪問日", "名称", "電話番号", "住所", "緯度", "経度", "URL", "メモ"];
+        let dataRows = []; // [{ 訪問日: '...', 名称: '...', ... }, ...]
+
+        const visitDateInput = document.getElementById('visitDate');
+        const nameInput = document.getElementById('name');
+        const phoneNumberInput = document.getElementById('phoneNumber');
+        const addressInput = document.getElementById('address');
+        const latitudeInput = document.getElementById('latitude');
+        const longitudeInput = document.getElementById('longitude');
+        const urlInput = document.getElementById('url');
+        const memoInput = document.getElementById('memo');
+        const dataTableBody = document.querySelector('#dataTable tbody');
+        const filenameInput = document.getElementById('filenameInput');
+        const loadCsvInput = document.getElementById('loadCsvInput');
+
+        // CSVフィールドをエスケープする関数
+        function escapeCsvField(field) {
+            if (field === null || field === undefined) {
+                field = '';
+            } else {
+                field = String(field);
+            }
+
+            // カンマ、改行、二重引用符が含まれるかチェック
+            if (field.includes(',') || field.includes('\n') || field.includes('"')) {
+                // 内部の二重引用符を二重にエスケープし、全体を二重引用符で囲む
+                return '"' + field.replace(/"/g, '""') + '"';
+            }
+            return field;
+        }
+
+        // CSVフィールドをアンエスケープする関数 (読み込み用)
+        function unescapeCsvField(field) {
+            if (field.length > 1 && field.startsWith('"') && field.endsWith('"')) {
+                return field.substring(1, field.length - 1).replace(/""/g, '"');
+            }
+            return field;
+        }
+
+        // テーブルを更新する関数
+        function renderTable() {
+            dataTableBody.innerHTML = '';
+            dataRows.forEach((rowData, index) => {
+                const tr = document.createElement('tr');
+                headers.forEach(header => {
+                    const td = document.createElement('td');
+                    td.textContent = rowData[header] || '';
+                    tr.appendChild(td);
+                });
+
+                const tdActions = document.createElement('td');
+                const deleteBtn = document.createElement('button');
+                deleteBtn.textContent = '削除';
+                deleteBtn.className = 'delete-btn';
+                deleteBtn.onclick = () => deleteRow(index);
+                tdActions.appendChild(deleteBtn);
+                tr.appendChild(tdActions);
+
+                dataTableBody.appendChild(tr);
+            });
+        }
+
+        // 行を追加する関数
+        document.getElementById('addRowBtn').addEventListener('click', () => {
+            const newRow = {
+                "訪問日": visitDateInput.value,
+                "名称": nameInput.value,
+                "電話番号": phoneNumberInput.value,
+                "住所": addressInput.value,
+                "緯度": latitudeInput.value,
+                "経度": longitudeInput.value,
+                "URL": urlInput.value,
+                "メモ": memoInput.value
+            };
+            dataRows.push(newRow);
+            renderTable();
+            // 入力フィールドをクリア
+            visitDateInput.value = '';
+            nameInput.value = '';
+            phoneNumberInput.value = '';
+            addressInput.value = '';
+            latitudeInput.value = '';
+            longitudeInput.value = '';
+            urlInput.value = '';
+            memoInput.value = '';
+        });
+
+        // 行を削除する関数
+        function deleteRow(index) {
+            if (confirm('この行を削除しますか？')) {
+                dataRows.splice(index, 1);
+                renderTable();
+            }
+        }
+
+        // 全データをクリアする関数
+        document.getElementById('clearAllRowsBtn').addEventListener('click', () => {
+            if (confirm('全てのデータをクリアしますか？この操作は元に戻せません。')) {
+                dataRows = [];
+                renderTable();
+            }
+        });
+
+        // CSV文字列を生成する関数
+        function generateCsvString() {
+            let csv = headers.map(escapeCsvField).join(',') + '\n';
+            dataRows.forEach(row => {
+                const values = headers.map(header => escapeCsvField(row[header]));
+                csv += values.join(',') + '\n';
+            });
+            return csv;
+        }
+
+        // CSVファイルを保存する関数
+        document.getElementById('saveCsvBtn').addEventListener('click', () => {
+            const csvString = generateCsvString();
+            const filename = filenameInput.value || 'data.csv';
+            const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            if (link.download !== undefined) {
+                const url = URL.createObjectURL(blob);
+                link.setAttribute('href', url);
+                link.setAttribute('download', filename);
+                link.style.visibility = 'hidden';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                URL.revokeObjectURL(url);
+            } else {
+                alert('お使いのブラウザはファイルのダウンロードをサポートしていません。');
+            }
+        });
+
+        // CSVファイルを読み込む関数
+        document.getElementById('loadCsvBtn').addEventListener('click', () => {
+            loadCsvInput.click();
+        });
+
+        loadCsvInput.addEventListener('change', (event) => {
+            const file = event.target.files[0];
+            if (!file) {
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const csvString = e.target.result;
+                parseCsvString(csvString);
+            };
+            reader.readAsText(file, 'UTF-8');
+            event.target.value = ''; 
+        });
+
+        // CSV文字列をパースする関数
+        function parseCsvString(csvString) {
+            const lines = csvString.split(/\r?\n/).filter(line => line.trim() !== '');
+
+            if (lines.length === 0) {
+                alert('読み込むデータがありません。');
+                return;
+            }
+
+            const parsedHeadersLine = lines[0];
+            const parsedHeaders = [];
+            let currentHeaderField = '';
+            let inHeaderQuote = false;
+            for (let i = 0; i < parsedHeadersLine.length; i++) {
+                const char = parsedHeadersLine[i];
+                if (char === '"') {
+                    if (i + 1 < parsedHeadersLine.length && parsedHeadersLine[i+1] === '"') {
+                        currentHeaderField += '"';
+                        i++; 
+                    } else {
+                        inHeaderQuote = !inHeaderQuote;
+                    }
+                } else if (char === ',' && !inHeaderQuote) {
+                    parsedHeaders.push(currentHeaderField);
+                    currentHeaderField = '';
+                } else {
+                    currentHeaderField += char;
+                }
+            }
+            parsedHeaders.push(currentHeaderField);
+
+            if (parsedHeaders.length !== headers.length || !parsedHeaders.every((val, idx) => val === headers[idx])) {
+                console.warn('CSVヘッダーが期待と異なります。', { expected: headers, got: parsedHeaders });
+                alert('CSVファイルのヘッダーが想定と異なります。正しく読み込めない可能性があります。本ツールで作成されたCSVファイルをご利用ください。');
+            }
+
+            dataRows = [];
+
+            for (let i = 1; i < lines.length; i++) {
+                const line = lines[i];
+                const rowData = {};
+                let currentFieldIndex = 0;
+                let inQuote = false;
+                let fieldStart = 0;
+
+                for (let j = 0; j < line.length; j++) {
+                    const char = line[j];
+                    if (char === '"') {
+                        if (j + 1 < line.length && line[j+1] === '"' && inQuote) {
+                            j++; 
+                        } else {
+                            inQuote = !inQuote;
+                        }
+                    } else if (char === ',' && !inQuote) {
+                        let field = line.substring(fieldStart, j);
+                        if (currentFieldIndex < headers.length) {
+                            rowData[headers[currentFieldIndex]] = unescapeCsvField(field);
+                        } else {
+                            console.warn(`余分なフィールドをスキップ (行 ${i + 1}): ${field}`);
+                        }
+                       
+                        fieldStart = j + 1;
+                        currentFieldIndex++;
+                    }
+                }
+                if (currentFieldIndex < headers.length) {
+                    let field = line.substring(fieldStart, line.length);
+                    rowData[headers[currentFieldIndex]] = unescapeCsvField(field);
+                } else if (currentFieldIndex === headers.length) { 
+                    let field = line.substring(fieldStart, line.length);
+                    rowData[headers[currentFieldIndex]] = unescapeCsvField(field);
+                }
+                
+                dataRows.push(rowData);
+            }
+            renderTable();
+            alert(`CSVファイルを読み込みました。${dataRows.length}件のデータ。`);
+        }
+
+        // 初期表示のためにダミーデータをいくつか追加
+        dataRows.push({
+            "訪問日": "2023-01-15",
+            "名称": "道の駅 〇〇",
+            "電話番号": "012-345-6789",
+            "住所": "東京都〇〇区〇〇1-1-1",
+            "緯度": "35.6895",
+            "経度": "139.6917",
+            "URL": "https://example.com/michi-no-eki-01",
+            "メモ": "初めての訪問。とても広くて楽しかった。"
+        });
+        dataRows.push({
+            "訪問日": "2023-02-20",
+            "名称": "道の駅 △△",
+            "電話番号": "098-765-4321",
+            "住所": "神奈川県〇〇市〇〇町2-2-2",
+            "緯度": "35.4478",
+            "経度": "139.6415",
+            "URL": "https://example.com/michi-no-eki-02",
+            "メモ": "地元の新鮮野菜が豊富。休憩スペースも充実。"
+        });
+        dataRows.push({
+            "訪問日": "",
+            "名称": "道の駅 □□",
+            "電話番号": "03-1234-5678",
+            "住所": "千葉県〇〇市〇〇3-3-3",
+            "緯度": "35.6049",
+            "経度": "140.1232",
+            "URL": "https://example.com/michi-no-eki-03",
+            "メモ": "まだ未訪問だが、景色が良さそうなので近いうちに行きたい。"
+        });
+        // スクロールを発生させるため、さらに多くのダミーデータを追加
+        for (let i = 4; i <= 20; i++) {
+            dataRows.push({
+                "訪問日": `2023-03-${String(i).padStart(2, '0')}`,
+                "名称": `道の駅 テスト${i}`,
+                "電話番号": `000-1111-22${String(i).padStart(2, '0')}`,
+                "住所": `テスト県テスト市テスト町${i}-${i}-${i}`,
+                "緯度": `35.${6000 + i}`,
+                "経度": `139.${6000 + i}`,
+                "URL": `https://example.com/test-michi-no-eki-${i}`,
+                "メモ": `これは長いメモの例です。改行\nやカンマ, や "二重引用符" も含まれています。このフィールドは二重引用符で囲まれて正しくエスケープされるはずです。`
+            });
+        }
+
+        renderTable();
+    </script>
+</body>
+</html>
