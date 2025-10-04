@@ -7,18 +7,17 @@
     <style>
         /* CSSリセットとベース設定 */
         html, body {
-            height: 100%; /* HTMLとBodyがビューポートの高さ全体を占めるようにする */
+            height: 100%;
             margin: 0;
             padding: 0;
-            box-sizing: border-box; /* paddingとborderをwidth/heightに含める */
+            box-sizing: border-box;
         }
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background-color: #f4f7f6;
             color: #333;
             display: flex;
-            flex-direction: column; /* body直下の子要素を縦に並べる */
-            /* min-height: 100vh; は height: 100% と box-sizing で不要になることが多い */
+            flex-direction: column;
         }
         h1, h2 {
             color: #2c3e50;
@@ -28,15 +27,15 @@
             margin-bottom: 15px;
         }
         .container {
-            max-width: 1400px; /* 全体の最大幅を広げる */
+            max-width: 1400px;
             margin: 20px auto;
             background-color: #ffffff;
             padding: 25px;
             border-radius: 8px;
             box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
-            flex-grow: 1; /* 親 (body) の残りの垂直スペースを占める */
+            flex-grow: 1;
             display: flex;
-            flex-direction: column; /* コンテナ内の要素も縦に配置 */
+            flex-direction: column;
         }
 
         /* ファイル操作ペイン */
@@ -44,58 +43,57 @@
             margin-bottom: 20px;
             padding-bottom: 20px;
             border-bottom: 1px solid #eee;
-            flex-shrink: 0; /* 縮小させない */
+            flex-shrink: 0;
         }
 
         /* データ入力とデータ一覧を左右に配置するためのコンテナ */
         .content-area {
             display: flex;
-            flex-wrap: wrap; /* 画面幅が狭い場合に折り返す */
-            gap: 20px; /* ペイン間の隙間 */
-            flex-grow: 1; /* 親 (.container) の残りの垂直スペースを占める */
-            min-height: 0; /* Flexアイテムが内容のサイズを超えて縮むことを許可 */
-            /* overflow: hidden; /* 子要素がはみ出すのを防ぐ（横スクロールは子で処理） */
+            flex-wrap: wrap;
+            gap: 20px;
+            flex-grow: 1;
+            min-height: 0;
         }
         .input-pane {
-            flex: 4; /* データ入力ペインの幅を4の比率にする */
-            min-width: 400px; /* 最小幅を少し調整 */
+            flex: 4;
+            min-width: 400px;
             padding: 20px;
             border: 1px solid #e0e0e0;
             border-radius: 8px;
             background-color: #fcfcfc;
             box-shadow: 0 2px 5px rgba(0, 0, 0, 0.03);
-            display: flex; /* 子要素を縦に配置するためにflexを適用 */
+            display: flex;
             flex-direction: column;
-            flex-shrink: 0; /* 横並び時に縮小させない */
+            flex-shrink: 0;
         }
         .list-pane {
-            flex: 6; /* データ一覧ペインの幅を6の比率にする */
-            min-width: 550px; /* 最小幅を少し調整 */
+            flex: 6;
+            min-width: 550px;
             padding: 20px;
             border: 1px solid #e0e0e0;
             border-radius: 8px;
             background-color: #fcfcfc;
             box-shadow: 0 2px 5px rgba(0, 0, 0, 0.03);
-            display: flex; /* 子要素を縦に配置するためにflexを適用 */
+            display: flex;
             flex-direction: column;
-            min-height: 0; /* Flexアイテムが内容のサイズを超えて縮むことを許可 */
+            min-height: 0;
         }
         .list-pane h2 {
             margin-top: 0;
             margin-bottom: 15px;
-            flex-shrink: 0; /* タイトルは縮まないようにする */
+            flex-shrink: 0;
         }
         .table-scroll-wrapper {
-            flex-grow: 1; /* 親要素 (.list-pane) の残りの垂直スペースを全て占める */
-            overflow-y: auto; /* 垂直スクロールを有効にする */
-            overflow-x: auto; /* 横スクロールも有効にする */
-            height: 0; /* Flexアイテムの基準高さを0に設定し、flex-growで高さが決まるようにする */
-            min-height: 0; /* Flexアイテムが内容のサイズを超えて縮むことを許可する */
-            border-top: 1px solid #eee; /* テーブルの上部に罫線を追加して見やすく */
-            padding-top: 5px; /* 罫線とテーブルの間に余白 */
+            flex-grow: 1;
+            overflow-y: auto;
+            overflow-x: auto;
+            height: 0;
+            min-height: 0;
+            border-top: 1px solid #eee;
+            padding-top: 5px;
         }
         table {
-            width: 100%; /* スクロールラッパー内で幅を100%にする */
+            width: 100%;
             border-collapse: collapse;
             font-size: 0.85em;
         }
@@ -104,21 +102,21 @@
             padding: 6px;
             text-align: left;
             word-break: break-all;
-            white-space: nowrap; /* テーブルセルが改行しないように（横スクロールのため） */
+            white-space: nowrap;
         }
         table th:last-child,
         table td:last-child {
-            width: 80px; /* 操作列の幅を固定 */
+            width: 80px;
             text-align: center;
-            white-space: nowrap; /* ボタンが改行しないように */
+            white-space: nowrap;
         }
         table th {
             background-color: #ecf0f1;
             font-weight: bold;
             color: #333;
-            position: sticky; /* ヘッダーを固定する */
-            top: 0; /* スクロール領域の最上部に固定 */
-            z-index: 1; /* 他のコンテンツより手前に表示 */
+            position: sticky;
+            top: 0;
+            z-index: 1;
         }
         table tr:nth-child(even) {
             background-color: #f9f9f9;
@@ -289,6 +287,7 @@
             <button id="saveCsvBtn">CSVファイルを保存</button>
             <input type="file" id="loadCsvInput" accept=".csv">
             <button id="loadCsvBtn">CSVファイルを読み込み</button>
+            <button id="showManualBtn" style="background-color: #6c757d;">取扱説明書を表示</button>
             <p style="font-size: 0.8em; color: #666; margin-top: 10px;">
                 <strong>注意:</strong> CSV読み込みは、本ツールで生成された形式（二重引用符、エスケープルール）に厳密に従っている場合に最も安定して動作します。手動で編集されたCSVファイルでは、予期せぬパースエラーが発生する可能性があります。
             </p>
@@ -376,6 +375,7 @@
         const dataTableBody = document.querySelector('#dataTable tbody');
         const filenameInput = document.getElementById('filenameInput');
         const loadCsvInput = document.getElementById('loadCsvInput');
+        const showManualBtn = document.getElementById('showManualBtn');
 
         // CSVフィールドをエスケープする関数
         function escapeCsvField(field) {
@@ -593,6 +593,105 @@
             renderTable();
             alert(`CSVファイルを読み込みました。${dataRows.length}件のデータ。`);
         }
+
+        // 取扱説明書を表示する関数
+        showManualBtn.addEventListener('click', () => {
+            const manualContent = `
+                <!DOCTYPE html>
+                <html lang="ja">
+                <head>
+                    <meta charset="UTF-8">
+                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                    <title>道の駅 CSV 作成・編集ツール - 取扱説明書</title>
+                    <style>
+                        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; margin: 20px; background-color: #f9f9f9; }
+                        .manual-container { max-width: 800px; margin: auto; background-color: #fff; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+                        h1 { color: #2c3e50; border-bottom: 2px solid #3498db; padding-bottom: 10px; margin-bottom: 20px; }
+                        h2 { color: #34495e; border-bottom: 1px dashed #ccc; padding-bottom: 5px; margin-top: 25px; margin-bottom: 15px; }
+                        h3 { color: #555; margin-top: 20px; margin-bottom: 10px; }
+                        p, li { margin-bottom: 10px; }
+                        ul { list-style-type: disc; margin-left: 20px; }
+                        ol { list-style-type: decimal; margin-left: 20px; }
+                        .note { background-color: #ecf0f1; border-left: 5px solid #3498db; padding: 10px; margin: 15px 0; border-radius: 4px; }
+                        .warning { background-color: #fdd; border-left: 5px solid #e74c3c; padding: 10px; margin: 15px 0; border-radius: 4px; color: #c0392b; }
+                        code { background-color: #eef; padding: 2px 4px; border-radius: 3px; font-family: 'Consolas', 'Courier New', monospace; }
+                    </style>
+                </head>
+                <body>
+                    <div class="manual-container">
+                        <h1>道の駅 CSV 作成・編集ツール - 取扱説明書</h1>
+                        <p>このツールは、道の駅の訪問記録をCSV形式で作成・編集・管理するためのシンプルなウェブアプリケーションです。</p>
+
+                        <h2>1. ファイル操作</h2>
+                        <h3>1.1. ファイル名の指定</h3>
+                        <ul>
+                            <li>「<strong>保存/読み込みファイル名</strong>」欄に、保存または読み込みたいCSVファイルの名前（例: <code>\`道の駅データ.csv\`</code>）を入力します。</li>
+                        </ul>
+                        <h3>1.2. CSVファイルを保存</h3>
+                        <ul>
+                            <li>「<strong>CSVファイルを保存</strong>」ボタンをクリックすると、現在表示されているデータがCSVファイルとしてダウンロードされます。</li>
+                            <li>ファイル名は「保存/読み込みファイル名」で指定した名前になります。</li>
+                        </ul>
+                        <h3>1.3. CSVファイルを読み込み</h3>
+                        <ul>
+                            <li>「<strong>CSVファイルを読み込み</strong>」ボタンをクリックすると、ファイル選択ダイアログが表示されます。</li>
+                            <li>編集したいCSVファイルを選択して開くと、その内容がデータ一覧に表示されます。</li>
+                            <li class="warning"><strong>注意:</strong> 本ツールで生成された形式（二重引用符、エスケープルール）に厳密に従っているCSVファイルでの使用を推奨します。手動で編集されたCSVファイルや異なるツールで作成されたCSVファイルでは、予期せぬパースエラーが発生する可能性があります。</li>
+                        </ul>
+
+                        <h2>2. データ入力</h2>
+                        <p>画面左側の「データ入力」ペインで、道の駅の情報を入力します。</p>
+                        <ul>
+                            <li><strong>訪問日 (YYYY-MM-DD):</strong> 道の駅を訪問した日付を入力します。日付ピッカーを利用できます。</li>
+                            <li><strong>名称:</strong> 道の駅の正式名称を入力します（例: <code>\`道の駅〇〇\`</code>）。</li>
+                            <li><strong>電話番号:</strong> 道の駅の電話番号を入力します（例: <code>\`00-0000-0000\`</code>）。</li>
+                            <li><strong>住所:</strong> 道の駅の住所を入力します（例: <code>\`〇〇県〇〇市〇〇町1-2-3\`</code>）。</li>
+                            <li><strong>緯度:</strong> 道の駅の緯度（例: <code>\`35.6895\`</code>）を入力します。</li>
+                            <li><strong>経度:</strong> 道の駅の経度（例: <code>\`139.6917\`</code>）を入力します。</li>
+                            <li><strong>URL:</strong> 道の駅の公式ウェブサイトなどのURLを入力します（例: <code>\`https://example.com\`</code>）。</li>
+                            <li><strong>メモ:</strong> 道の駅に関する任意のメモを自由に入力できます。カンマや改行が含まれていても、CSV保存時に適切に処理されます。</li>
+                        </ul>
+                        <h3>2.1. 行を追加</h3>
+                        <ul>
+                            <li>各入力フィールドにデータを入力後、「<strong>行を追加</strong>」ボタンをクリックすると、入力されたデータが「データ一覧」のテーブルに新しい行として追加されます。</li>
+                            <li>追加後、入力フィールドは自動的にクリアされます。</li>
+                        </ul>
+                        
+                        <h2>3. データ一覧</h2>
+                        <p>画面右側の「データ一覧」ペインに、現在管理している道の駅データが一覧表示されます。</p>
+                        <p>テーブルの各列は、入力フィールドに対応するヘッダー（訪問日、名称など）で構成されています。</p>
+                        <h3>3.1. 行の削除</h3>
+                        <ul>
+                            <li>各行の右端にある「<strong>削除</strong>」ボタンをクリックすると、その行のデータがテーブルから削除されます。確認ダイアログが表示されます。</li>
+                        </ul>
+                        <h3>3.2. 全データをクリア</h3>
+                        <ul>
+                            <li>「<strong>全データをクリア</strong>」ボタンをクリックすると、テーブル上の全てのデータが削除されます。この操作は元に戻せません。確認ダイアログが表示されます。</li>
+                        </ul>
+
+                        <h2>4. CSV形式に関する補足</h2>
+                        <ul>
+                            <li>本ツールは標準的なCSV形式（カンマ区切り、ダブルクォーテーションによるエスケープ）に準拠しています。</li>
+                            <li>フィールド内にカンマ (<code>\`, \`</code>)、改行 (<code>\`\\n\`</code>)、または二重引用符 (<code>\`"\`</code>) が含まれる場合、そのフィールド全体が二重引用符で囲まれてエスケープされます。</li>
+                            <li>フィールド内の二重引用符は、二重の二重引用符 (<code>\`""\`</code>) に変換されてエスケープされます。</li>
+                        </ul>
+
+                        <div class="note">
+                            ご不明な点がありましたら、上記の各項目をご確認ください。
+                        </div>
+                    </div>
+                </body>
+                </html>
+            `;
+
+            const newWindow = window.open('about:blank', '道の駅ツール取扱説明書', 'width=800,height=600,scrollbars=yes');
+            if (newWindow) {
+                newWindow.document.write(manualContent);
+                newWindow.document.close();
+            } else {
+                alert('ポップアップブロックにより取扱説明書が表示できませんでした。ブラウザの設定をご確認ください。');
+            }
+        });
 
         // 初期表示のためにダミーデータをいくつか追加
         dataRows.push({
